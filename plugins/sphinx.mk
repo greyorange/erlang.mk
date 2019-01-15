@@ -55,8 +55,50 @@ help::
 
 # Plugin-specific targets.
 
-sphinx:
+sphinx: $(if $(IS_APP),,venv)
 	$(foreach F,$(SPHINX_FORMATS),$(call sphinx.build,$F))
 
 distclean-sphinx:
 	$(gen_verbose) rm -rf $(filter-out $(SPHINX_SOURCE),$(foreach F,$(SPHINX_FORMATS),$(call sphinx.output,$F)))
+
+
+.PHONY: apps-docs
+
+clean-docs::
+	$(gen_verbose) rm -rf $(sphinx_html_output)
+
+venv: venv/bin/activate
+
+venv/bin/activate: requirements.txt
+	test -d venv || virtualenv venv
+	venv/bin/pip install -Ur requirements.txt
+	touch venv/bin/activate
+
+VENV_ACTIVATE=. venv/bin/activate
+
+clean-venv:
+	$(gen_verbose) rm -rf venv
+
+ifneq ($(ALL_APPS_DIRS),)
+
+define docs_app_target
+apps-docs-$1:
+	@$(MAKE) -C $1 docs IS_APP=1
+clean-apps-docs-$1:
+	@$(MAKE) -C $1 clean-docs IS_APP=1
+endef
+
+$(foreach app,$(ALL_APPS_DIRS),$(eval $(call docs_app_target,$(app))))
+
+apps-docs: $(addprefix apps-docs-,$(ALL_APPS_DIRS))
+clean-apps-docs: $(addprefix clean-apps-docs-,$(ALL_APPS_DIRS))
+
+ifeq ($(IS_APP),)
+docs:: apps-docs
+clean-docs:: clean-apps-docs
+endif
+
+endif
+
+clean:: clean-docs
+distclean:: clean-venv
