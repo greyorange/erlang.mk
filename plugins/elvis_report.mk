@@ -1,7 +1,10 @@
+ELVIS_PARALLEL_JOBS ?= 4
+
 ## Generates an HTML report with elvis style warnings
 
 define elvis_report.erl
 	application:set_env(elvis, no_output, true),
+	application:set_env(elvis, parallel, ${ELVIS_PARALLEL_JOBS}),
 	io:format("Running elvis style checker... "),
 	Result = elvis_core:rock(),
 	io:format("[DONE]~nGenerating report... "),
@@ -37,7 +40,7 @@ define elvis_report.erl
 				lists:mapfoldl(
 					fun(FileResult, FileCountAccIn) ->
 						F = maps:get(file, FileResult),
-						Path = maps:get(path, F),
+						Path = case is_map(F) of true -> maps:get(path, F); false -> F end,
 						{ok, Rules} = maps:find(rules, FileResult),
 						lists:mapfoldl(
 							fun(Rule, RuleCountAccIn) ->
