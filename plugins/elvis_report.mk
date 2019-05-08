@@ -1,4 +1,4 @@
-ELVIS_PARALLEL_JOBS ?= 4
+ELVIS_PARALLEL_JOBS ?= erlang:system_info(schedulers)
 
 ## Generates an HTML report with elvis style warnings
 
